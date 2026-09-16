@@ -1,22 +1,24 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { Star, MapPin, Clock, Phone, Plus, ShoppingBag, Moon } from "lucide-react";
+import { useState } from "react";
+import { Star, MapPin, Clock, Phone, ShoppingBag, Moon } from "lucide-react";
 
 import { Marquee } from "@/components/chop/Marquee";
 import { MagneticButton } from "@/components/chop/MagneticButton";
-import { OrderDrawer, type CartLine } from "@/components/chop/OrderDrawer";
+import { CartSheet } from "@/components/chop/CartSheet";
+import { MenuBrowser } from "@/components/chop/MenuBrowser";
+import { StickyCartBar } from "@/components/chop/StickyCartBar";
+import { useStore } from "@/lib/store";
 import {
   badges,
-  categories,
   directionsUrl,
   mapEmbedUrl,
-  menu,
   restaurant,
   reviews,
   showcase,
   whyUs,
   images,
 } from "@/data/restaurantData";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -76,29 +78,9 @@ const jsonLd = {
 };
 
 function Index() {
-  const [active, setActive] = useState(categories[0]!.id);
-  const [cart, setCart] = useState<Record<string, number>>({});
+  const { count } = useStore();
   const [open, setOpen] = useState(false);
 
-  const lines: CartLine[] = useMemo(
-    () =>
-      Object.entries(cart)
-        .map(([id, qty]) => ({ item: menu.find((m) => m.id === id)!, qty }))
-        .filter((l) => l.item && l.qty > 0),
-    [cart],
-  );
-  const count = lines.reduce((s, l) => s + l.qty, 0);
-
-  const changeQty = (id: string, delta: number) =>
-    setCart((c) => {
-      const next = Math.max(0, (c[id] ?? 0) + delta);
-      const copy = { ...c };
-      if (next === 0) delete copy[id];
-      else copy[id] = next;
-      return copy;
-    });
-
-  const filtered = menu.filter((m) => m.category === active);
 
   return (
     <div className="grain min-h-screen overflow-x-hidden bg-background pb-24 md:pb-0">
@@ -225,66 +207,8 @@ function Index() {
       </section>
 
       {/* MENU */}
-      <section id="menu" className="border-y-4 border-foreground bg-secondary px-5 py-20 md:px-10">
-        <div className="mx-auto max-w-7xl">
-          <h2 className="font-display text-5xl uppercase text-foreground md:text-7xl">The Menu</h2>
-          <p className="mt-3 text-muted-foreground">Everything between ₹20 and ₹200. No boring bites.</p>
+      <MenuBrowser />
 
-          <div className="no-scrollbar -mx-5 mt-8 flex gap-3 overflow-x-auto px-5 pb-2">
-            {categories.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => setActive(c.id)}
-                className={`shrink-0 rounded-full border-2 px-5 py-3 font-display uppercase tracking-wide min-h-12 transition-colors ${
-                  active === c.id
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border text-muted-foreground hover:border-accent hover:text-accent"
-                }`}
-              >
-                {c.emoji} {c.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((item) => (
-              <article
-                key={item.id}
-                className="group overflow-hidden rounded-[1.75rem] border border-border bg-card transition-transform duration-300 hover:-translate-y-1.5"
-              >
-                <div className="relative">
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    loading="lazy"
-                    width={1200}
-                    height={900}
-                    className="h-52 w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                  {item.tag && (
-                    <span className="absolute left-4 top-4 rounded-full bg-accent px-3 py-1 font-display text-sm uppercase text-accent-foreground">
-                      {item.tag}
-                    </span>
-                  )}
-                </div>
-                <div className="space-y-2 p-5">
-                  <div className="flex items-start justify-between gap-3">
-                    <h3 className="font-display text-2xl uppercase text-foreground">{item.name}</h3>
-                    <span className="font-display text-2xl text-primary">₹{item.price}</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">{item.description}</p>
-                  <button
-                    onClick={() => changeQty(item.id, 1)}
-                    className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-primary font-display uppercase text-primary-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-                  >
-                    <Plus className="size-5" /> Add {cart[item.id] ? `(${cart[item.id]})` : ""}
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* WHY */}
       <section id="why" className="px-5 py-20 md:px-10">
@@ -418,30 +342,10 @@ function Index() {
       </footer>
 
       {/* MOBILE STICKY BAR */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t-2 border-foreground bg-card/95 p-3 backdrop-blur md:hidden">
-        <div className="flex items-center gap-3">
-          <div className="no-scrollbar flex flex-1 gap-2 overflow-x-auto">
-            {categories.slice(0, 4).map((c) => (
-              <a
-                key={c.id}
-                href="#menu"
-                onClick={() => setActive(c.id)}
-                className="shrink-0 rounded-full border border-border px-3 py-2 text-sm text-muted-foreground"
-              >
-                {c.emoji}
-              </a>
-            ))}
-          </div>
-          <button
-            onClick={() => setOpen(true)}
-            className="min-h-12 shrink-0 rounded-full bg-primary px-5 font-display uppercase text-primary-foreground"
-          >
-            Order Now 🍟 {count > 0 && `(${count})`}
-          </button>
-        </div>
-      </div>
+      <StickyCartBar onOpenCart={() => setOpen(true)} />
 
-      <OrderDrawer open={open} onClose={() => setOpen(false)} lines={lines} onChangeQty={changeQty} />
+      <CartSheet open={open} onClose={() => setOpen(false)} />
+
     </div>
   );
 }
