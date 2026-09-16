@@ -6,7 +6,7 @@ import { useStore } from "@/lib/store";
 type Props = { open: boolean; onClose: () => void };
 
 export function CartSheet({ open, onClose }: Props) {
-  const { lines, subtotal, changeQty, setQty, clearCart, count } = useStore();
+  const { lines, subtotal, changeQty, clearCart, count } = useStore();
 
   if (!open) return null;
 
@@ -115,8 +115,3 @@ export function CartSheet({ open, onClose }: Props) {
     </div>
   );
 }
-
-export { useStore as useCart };
-
-// Silence unused import warning helper (setQty kept for future inline edits).
-export type CartSheetProps = Props;
